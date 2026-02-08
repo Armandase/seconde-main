@@ -1,0 +1,124 @@
+services:
+  # PostgreSQL Database for users and favorites
+  postgres:
+    image: postgres:15-alpine
+    container_name: seconde-main-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: secondemain
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - seconde-main-network
+
+  # Elasticsearch for product search
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: seconde-main-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - seconde-main-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: seconde-main-api-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - USER_SERVICE_URL=http://user-service:4001
+      - SEARCH_SERVICE_URL=http://search-service:4002
+      - SCRAPER_SERVICE_URL=http://scraper-service:4003
+    depends_on:
+      - user-service
+      - search-service
+      - scraper-service
+    networks:
+      - seconde-main-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    container_name: seconde-main-user-service
+    ports:
+      - "4001:4001"
+    environment:
+      - PORT=4001
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/secondemain
+      # CRITICAL: Change this secret before deploying to production!
+      # Generate a strong secret: openssl rand -base64 32
+      - JWT_SECRET=${JWT_SECRET:-CHANGE_THIS_SECRET_IN_PRODUCTION_PLEASE_USE_ENV_FILE}
+    depends_on:
+      - postgres
+    networks:
+      - seconde-main-network
+
+  # Search Service
+  search-service:
+    build:
+      context: ./services/search-service
+      dockerfile: Dockerfile
+    container_name: seconde-main-search-service
+    ports:
+      - "4002:4002"
+    environment:
+      - PORT=4002
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - seconde-main-network
+
+  # Scraper Service
+  scraper-service:
+    build:
+      context: ./services/scraper-service
+      dockerfile: Dockerfile
+    container_name: seconde-main-scraper-service
+    ports:
+      - "4003:4003"
+    environment:
+      - PORT=4003
+      - SEARCH_SERVICE_URL=http://search-service:4002
+    depends_on:
+      - search-service
+    networks:
+      - seconde-main-network
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: seconde-main-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:4000
+    depends_on:
+      - api-gateway
+    networks:
+      - seconde-main-network
+
+networks:
+  seconde-main-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  es_data:
