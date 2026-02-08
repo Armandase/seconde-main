@@ -39,22 +39,51 @@ The application is built using a microservices architecture with the following s
 
 ## Quick Start with Docker
 
+### Important Security Note
+
+⚠️ **Before deploying to production**, you MUST set a secure JWT secret:
+
+1. Generate a secure secret:
+```bash
+openssl rand -base64 32
+```
+
+2. Set it in your environment or .env file:
+```bash
+export JWT_SECRET="your-generated-secret-here"
+```
+
+Or create a `.env` file in the root directory:
+```bash
+JWT_SECRET=your-generated-secret-here
+```
+
+The application will fail to start if JWT_SECRET is not properly configured.
+
+### Starting the Application
+
 1. Clone the repository:
 ```bash
 git clone https://github.com/Armandase/seconde-main.git
 cd seconde-main
 ```
 
-2. Start all services with Docker Compose:
+2. Set your JWT secret (see security note above)
+
+3. Start all services with Docker Compose:
 ```bash
 docker-compose up --build
 ```
 
-3. Wait for all services to start (this may take a few minutes on first run)
+```bash
+docker compose up --build
+```
 
-4. Access the application at http://localhost:3000
+4. Wait for all services to start (this may take a few minutes on first run)
 
-5. Populate the database with sample products:
+5. Access the application at http://localhost:3000
+
+6. Populate the database with sample products:
 ```bash
 curl -X POST http://localhost:4000/api/scraper/run
 ```

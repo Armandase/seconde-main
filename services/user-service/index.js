@@ -6,7 +6,14 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 4001;
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Critical security check
+if (!JWT_SECRET) {
+  console.error('FATAL ERROR: JWT_SECRET environment variable is not set.');
+  console.error('Please set JWT_SECRET before starting the service.');
+  process.exit(1);
+}
 
 // Database connection
 const pool = new Pool({

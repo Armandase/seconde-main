@@ -60,7 +60,9 @@ services:
     environment:
       - PORT=4001
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/secondemain
-      - JWT_SECRET=your-secret-key-change-in-production
+      # CRITICAL: Change this secret before deploying to production!
+      # Generate a strong secret: openssl rand -base64 32
+      - JWT_SECRET=${JWT_SECRET:-CHANGE_THIS_SECRET_IN_PRODUCTION_PLEASE_USE_ENV_FILE}
     depends_on:
       - postgres
     networks:
